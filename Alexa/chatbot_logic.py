@@ -34,7 +34,7 @@ class EnhancedChatbot:
     # --------------------------------------------------------
     # MAIN MESSAGE PROCESSOR
     # --------------------------------------------------------
-    def process_message(self, message: str) -> dict:
+    def get_reply(self, message: str) -> dict:
         msg = message.lower().strip()
 
         # 1. Greetings
