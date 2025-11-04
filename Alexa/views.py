@@ -1656,7 +1656,7 @@ class EnhancedChatbot:
         self.state['collected']['selected_panel'] = {'type': panel_type, 'model': key}
 
         # Build the response with line-by-line details
-        reply = f"🌟 **{key}** 🌟\n\n"
+        reply = f"**{key}** :\n\n"
 
         reply += f"**Panel Name:** {key}\n\n"
         reply += f"**Pixel Pitch:** {specs.get('pixel_pitch', key)}\n\n"
