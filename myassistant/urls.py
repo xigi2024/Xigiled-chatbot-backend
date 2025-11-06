@@ -16,11 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from Alexa.views import AnalyticsAPIView
+from Alexa.views import AnalyticsAPIView, EnhancedWelcomeAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/alexa/', include('Alexa.urls')),
     path('api/analytics/', AnalyticsAPIView.as_view(), name='analytics'),
+    path('api/home/', EnhancedWelcomeAPIView.as_view(), name='home'),
 
 ]

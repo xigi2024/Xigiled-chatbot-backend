@@ -2157,7 +2157,109 @@ class EnhancedWelcomeAPIView(APIView):
         user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
         timestamp = timezone.now().isoformat()
         logger.info(f"Request received: {request.method} {request.path} | IP: {ip_address} | User-Agent: {user_agent} | Timestamp: {timestamp}")
-        return Response({"message": "Welcome to the XIGI LED Assistant API Service!"})
+
+        # Home page data
+        home_data = [
+            {
+                "section": "home_section1",
+                "title": "Why Choose XIGI LED?",
+                "images": [
+                    {
+                        "title": "High Brightness",
+                        "description": "Superior brightness for all lighting conditions.",
+                        "image": "high_brightness.jpg"
+                    },
+                    {
+                        "title": "Energy Efficient",
+                        "description": "Low power consumption and cost-effective.",
+                        "image": "energy_efficient.jpg"
+                    },
+                    {
+                        "title": "Durable Design",
+                        "description": "Built to last in various environments.",
+                        "image": "durable_design.jpg"
+                    }
+                ]
+            },
+            {
+                "section": "home_section2",
+                "title": "Complete Range of LED Panels",
+                "images": [
+                    {"image": "indoor_led.jpg"},
+                    {"image": "outdoor_led.jpg"},
+                    {"image": "rental_led.jpg"},
+                    {"image": "transparent_led.jpg"},
+                    {"image": "truck_led.jpg"},
+                    {"image": "flexible_led.jpg"},
+                    {"image": "custom_led.jpg"},
+                    {"image": "standee_led.jpg"}
+                ]
+            },
+            {
+                "section": "home_section3",
+                "title": "Industries We Serve",
+                "description": "Tailored LED solutions for every industry",
+                "images": [
+                    {
+                        "title": "Hotels and Hospitality",
+                        "image": ["hotels_hover.jpg", "hotels.jpg"]
+                    },
+                    {
+                        "title": "Government and Public Spaces",
+                        "image": ["government_hover.jpg", "government.jpg"]
+                    }
+                ]
+            },
+            {
+                "section": "home_section4",
+                "title": "Expert Support & Installation",
+                "images": [
+                    {
+                        "title": "Technical Support",
+                        "description": "24/7 technical assistance.",
+                        "image": "technical_support.jpg"
+                    },
+                    {
+                        "title": "Installation Services",
+                        "description": "Professional installation by experts.",
+                        "image": "installation_services.jpg"
+                    }
+                ]
+            },
+            {
+                "section": "home_section5",
+                "title": "Industry Applications",
+                "images": [
+                    {
+                        "title": "Retail",
+                        "description": "Attractive displays for retail environments.",
+                        "image": "retail.jpg"
+                    },
+                    {
+                        "title": "Events",
+                        "description": "Dynamic displays for events.",
+                        "image": "events.jpg"
+                    }
+                ]
+            },
+            {
+                "section": "home_section6",
+                "title": "Trusted by Industry Leaders",
+                "images": [
+                    {
+                        "client_name": "John Doe",
+                        "title": "CEO",
+                        "description": "Excellent service and quality.",
+                        "image": "client1.jpg",
+                        "company": "ABC Corp",
+                        "industry": "Retail",
+                        "location": "Chennai"
+                    }
+                ]
+            }
+        ]
+
+        return Response(home_data)
 
     def get_client_ip(self, request):
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
