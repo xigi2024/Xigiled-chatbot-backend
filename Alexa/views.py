@@ -41,22 +41,32 @@ STEPS = {
         'message': "Please enter your screen width and height in feet/meters (e.g., '10x6 ft')."
     },
     'rental_duration': {
-        'next': 'quantity_input',
+        'next': 'size_input',
         'message': "Please specify rental duration (e.g., '3 days' or '1 week')."
     },
     'size_input': {
-        'next': 'quantity_input',
+        'next': 'purpose_input',
         'message': "Select your screen size:",
         'type': 'buttons',
-        'buttons': ['5x3 ft', '7x3 ft', '10x6 ft', '12x8 ft', '15x10 ft', 'Custom Size']
+        'buttons': ['5H x 3W ft', '7H x 3W ft', '10H x 6W ft', '12H x 8W ft', '15H x 10W ft', 'Custom Size']
+    },
+    'purpose_input': {
+        'next': 'accessories_selection',
+        'message': "What will you use this LED panel for? (e.g., Mall, Event Hall, Studio, Outdoor Stage, Church, Retail, Manufacturing Factory)"
+    },
+    'accessories_selection': {
+        'next': 'quantity_input',
+        'message': "Select accessories bundle:",
+        'type': 'buttons',
+        'buttons': ['Essential Kit', 'Professional Kit', 'No Accessories']
     },
     'quantity_input': {
         'next': 'controller_inclusion',
-        'message': "Would you like to include controller, cabinets, and mounting structure? (Yes/No)"
+        'message': "How many identical displays (quantity) do you need?"
     },
     'controller_inclusion': {
         'next': 'installation',
-        'message': "Do you need on-site installation support? (Yes/No)"
+        'message': "Would you like to include controller, cabinets, and mounting structure? (Yes/No)"
     },
     'installation': {
         'next': 'delivery_location',
@@ -707,6 +717,19 @@ def get_purpose_recommendations(purpose: str) -> str:
             text += f"**Step {i}** - {clean_step}\n\n"
     return text
 
+def convert_price_to_sq_ft(price_str):
+    parts = price_str.split(' – ')
+    if len(parts) == 2:
+        p1 = parts[0].replace('₹', '').replace(',', '')
+        p2 = parts[1].replace('₹', '').replace(',', '')
+        try:
+            n1 = float(p1) / 10.764
+            n2 = float(p2) / 10.764
+            return f'₹{int(round(n1)):,} – ₹{int(round(n2)):,}'
+        except ValueError:
+            return price_str
+    return price_str
+
 # Helper lists for quick lookups
 ALL_INDOOR_KEYS = list(INDOOR_SPECS.keys())
 ALL_OUTDOOR_KEYS = list(OUTDOOR_SPECS.keys())
@@ -927,6 +950,10 @@ class EnhancedChatbot:
             response = self._handle_application_purpose(message)
             response['reply'] = welcome_back + response['reply']
             return response
+        elif current_step == 'accessories_selection':
+            response = self._handle_accessories_selection(message)
+            response['reply'] = welcome_back + response['reply']
+            return response
         elif current_step == 'rental_duration':
             response = self._handle_rental_duration(message)
             response['reply'] = welcome_back + response['reply']
@@ -1068,26 +1095,20 @@ class EnhancedChatbot:
                     "summary": self.state['collected']
                 }
             else:
-                if panel_type == 'rental':
-                    self.state['current_step'] = 'rental_duration'
-                else:
-                    self.state['current_step'] = 'size_input'
+                self.state['current_step'] = 'size_input'
 
                 panel_details = specs[key]
                 formatted_specs = self._format_specs(key, panel_details, "Selected" if panel_type == 'indoor' else "Selected Outdoor")
                 product_bundles = get_product_bundles(panel_type)
                 product_recs = get_recommendations(panel_type)
 
-                if panel_type == 'rental':
-                    message = f"Great choice! You've selected **{key}** for rental.\n\n{formatted_specs}{product_bundles}{product_recs}\n\n{STEPS['rental_duration']['message']}"
-                else:
-                    message = f"Great choice! You've selected **{key}**.\n\n{formatted_specs}{product_bundles}{product_recs}\n\n{STEPS['size_input']['message']}"
+                message = f"Great choice! You've selected **{key}**.\n\n{formatted_specs}{product_bundles}{product_recs}\n\n{STEPS['size_input']['message']}"
                 return {
                     "session_id": self.session_id,
                     "reply": message,
                     "intent": "panel_selection",
-                    "type": STEPS['size_input'].get('type') if panel_type != 'rental' else 'text',
-                    "buttons": STEPS['size_input'].get('buttons') if panel_type != 'rental' else None
+                    "type": STEPS['size_input'].get('type'),
+                    "buttons": STEPS['size_input'].get('buttons')
                 }
         else:
             return self._wrap("Please select a valid panel from the list.", "panel_selection")
@@ -1108,35 +1129,18 @@ class EnhancedChatbot:
                     "summary": self.state['collected']
                 }
             else:
-                self.state['current_step'] = 'panel_category'
+                self.state['current_step'] = 'accessories_selection'
 
                 purpose_guidance = get_purpose_recommendations(purpose)
-                next_step = STEPS['application_purpose']['message']
+                next_step = STEPS['accessories_selection']['message']
 
-                # Suggest panel type based on purpose
-                suggested_panel_type = None
-                for key, recs in PURPOSE_RECOMMENDATIONS.items():
-                    if key != 'default' and key in purpose.lower():
-                        suggested_panel_type = recs.get('panel_type', 'indoor')
-                        break
-                if not suggested_panel_type:
-                    suggested_panel_type = 'indoor'  # default
-
-                if suggested_panel_type == 'indoor':
-                    buttons = ALL_INDOOR_KEYS
-                    category = 'indoor'
-                else:
-                    buttons = ALL_OUTDOOR_KEYS
-                    category = 'outdoor'
-
-                consultant_message = f"Perfect! I see you're setting up a {purpose}.\n{purpose_guidance}\n\nBased on your purpose, I recommend **{suggested_panel_type.title()} Panels**. {next_step}"
+                consultant_message = f"Perfect! I see you're setting up a {purpose}.\n{purpose_guidance}\n\n{next_step}"
                 return {
                     "session_id": self.session_id,
                     "reply": consultant_message,
                     "intent": "application_purpose",
                     "type": "buttons",
-                    "category": category,
-                    "buttons": buttons
+                    "buttons": STEPS['accessories_selection']['buttons']
                 }
         else:
             return self._wrap("Please provide a valid application purpose (e.g., 'Event Hall', 'Studio', 'Mall', 'Outdoor Stage', 'Church', 'Retail').", "application_purpose")
@@ -1175,19 +1179,19 @@ class EnhancedChatbot:
 
     def _handle_size_input(self, message: str) -> dict:
         m = message.lower().strip()
-        if m == "5x3 ft" or m == "5x3":
+        if m == "5h x 3w ft" or m == "5x3 ft" or m == "5x3":
             self.state['collected']['width'] = 5.0
             self.state['collected']['height'] = 3.0
-        elif m == "7x3 ft" or m == "7x3":
+        elif m == "7h x 3w ft" or m == "7x3 ft" or m == "7x3":
             self.state['collected']['width'] = 7.0
             self.state['collected']['height'] = 3.0
-        elif m == "10x6 ft" or m == "10x6":
+        elif m == "10h x 6w ft" or m == "10x6 ft" or m == "10x6":
             self.state['collected']['width'] = 10.0
             self.state['collected']['height'] = 6.0
-        elif m == "12x8 ft" or m == "12x8":
+        elif m == "12h x 8w ft" or m == "12x8 ft" or m == "12x8":
             self.state['collected']['width'] = 12.0
             self.state['collected']['height'] = 8.0
-        elif m == "15x10 ft" or m == "15x10":
+        elif m == "15h x 10w ft" or m == "15x10 ft" or m == "15x10":
             self.state['collected']['width'] = 15.0
             self.state['collected']['height'] = 10.0
         elif m == "custom size":
@@ -1209,7 +1213,7 @@ class EnhancedChatbot:
                     "reply": "Select your screen size:",
                     "intent": "size_input",
                     "type": "buttons",
-                    "buttons": ["5x3 ft", "7x3 ft", "10x6 ft", "12x8 ft", "15x10 ft", "Custom Size"]
+                    "buttons": ["5H x 3W ft", "7H x 3W ft", "10H x 6W ft", "12H x 8W ft", "15H x 10W ft", "Custom Size"]
                 }
 
         if self.state.get('modifying'):
@@ -1218,6 +1222,31 @@ class EnhancedChatbot:
             return {
                 "session_id": self.session_id,
                 "reply": f"Size updated! Here is the updated summary:\n\n{summary}\n\nWould you like to save this configuration or modify something else? (Save/Modify)",
+                "intent": "review_confirmation",
+                "type": "summary",
+                "summary": self.state['collected']
+            }
+        else:
+            self.state['current_step'] = 'purpose_input'
+            return self._wrap(STEPS['purpose_input']['message'], "purpose_input")
+
+    def _handle_accessories_selection(self, message: str) -> dict:
+        m = message.lower()
+        if m == "essential kit":
+            self.state['collected']['accessories'] = 'Essential Kit'
+        elif m == "professional kit":
+            self.state['collected']['accessories'] = 'Professional Kit'
+        elif m == "no accessories":
+            self.state['collected']['accessories'] = 'No Accessories'
+        else:
+            return self._wrap("Please select 'Essential Kit', 'Professional Kit', or 'No Accessories'.", "accessories_selection")
+
+        if self.state.get('modifying'):
+            self.state['current_step'] = 'review_confirmation'
+            summary = self._build_summary(self.state['collected'])
+            return {
+                "session_id": self.session_id,
+                "reply": f"Accessories updated! Here is the updated summary:\n\n{summary}\n\nWould you like to save this configuration or modify something else? (Save/Modify)",
                 "intent": "review_confirmation",
                 "type": "summary",
                 "summary": self.state['collected']
@@ -1667,24 +1696,32 @@ class EnhancedChatbot:
         if panel_type == 'rental':
             reply += f"**Price:** Rental/Day: {specs.get('rental_price_per_day', 'N/A')}, Rental/Week: {specs.get('rental_price_per_week', 'N/A')}\n\n"
         else:
-            reply += f"**Price:** Price/Sq.m: {specs.get('price_per_sq_meter', 'N/A')}, Price/Cabinet: {specs.get('price_per_cabinet', 'N/A')}\n\n"
+            module_sizes = specs.get('module_sizes', [])
+            hxw = module_sizes[0] if module_sizes else 'N/A'
+            price_sq_ft = convert_price_to_sq_ft(specs.get('price_per_sq_meter', 'N/A'))
+            reply += f"**Price:** Price/Sq.ft ({hxw}): {price_sq_ft}, Price/Cabinet: {specs.get('price_per_cabinet', 'N/A')}\n\n"
         reply += "\n"
 
         if panel_type == 'rental':
             next_step = STEPS['rental_duration']['message']
-        elif 'purpose' in self.state['collected']:
+            return {
+                "session_id": self.session_id,
+                "reply": reply + f"\n\n👉 **NEXT STEP:** {next_step}",
+                "intent": "panel_details",
+                "panel": key
+            }
+        else:
             self.state['current_step'] = 'size_input'
             next_step = STEPS['size_input']['message']
-        else:
-            next_step = "Where will you use this panel? (e.g., Mall, Event Hall, Studio, Outdoor Stage, Church)"
-        reply += f"👉 **NEXT STEP:** {next_step}"
-
-        return {
-            "session_id": self.session_id,
-            "reply": reply,
-            "intent": "panel_details",
-            "panel": key
-        }
+            reply += f"\n\n👉 **NEXT STEP:** {next_step}"
+            return {
+                "session_id": self.session_id,
+                "reply": reply,
+                "intent": "panel_details",
+                "panel": key,
+                "type": "buttons",
+                "buttons": STEPS['size_input']['buttons']
+            }
 
     # Compare two models - parse message for two panel names
     def _handle_compare(self, message: str) -> dict:
@@ -1744,9 +1781,11 @@ class EnhancedChatbot:
                         setup_fee = specs.get('setup_fee', 'Not available')
                         return self._wrap(f"Rental price for {panel_key}:\n- Per Day: {price_day}\n- Per Week: {price_week}\n- Setup Fee: {setup_fee}", "price")
                     else:
-                        price_sq = specs.get('price_per_sq_meter', 'Not available')
+                        module_sizes = specs.get('module_sizes', [])
+                        hxw = module_sizes[0] if module_sizes else 'N/A'
+                        price_sq_ft = convert_price_to_sq_ft(specs.get('price_per_sq_meter', 'Not available'))
                         price_cab = specs.get('price_per_cabinet', 'Not available')
-                        return self._wrap(f"Price for {panel_key}:\n- Per Sq. Meter: {price_sq}\n- Per Cabinet: {price_cab}", "price")
+                        return self._wrap(f"Price for {panel_key}:\n- Per Sq.ft ({hxw}): {price_sq_ft}\n- Per Cabinet: {price_cab}", "price")
                 else:
                     return self._wrap(f"Price information for {panel_key} is not available.", "price")
             else:
@@ -1944,7 +1983,10 @@ class EnhancedChatbot:
             lines.append(f"Driving Mode: {', '.join(details.get('driving_modes'))}")
         lines.append(f"IP Rating: {details.get('ip_rating')}")
         if details.get('price_per_sq_meter'):
-            lines.append(f"Price per Sq.Meter: {details.get('price_per_sq_meter')}")
+            module_sizes = details.get('module_sizes', [])
+            hxw = module_sizes[0] if module_sizes else 'N/A'
+            price_sq_ft = convert_price_to_sq_ft(details.get('price_per_sq_meter'))
+            lines.append(f"Price per Sq.ft ({hxw}): {price_sq_ft}")
         if details.get('price_per_cabinet'):
             lines.append(f"Price per Cabinet: {details.get('price_per_cabinet')}")
         return "\n".join(lines)
@@ -1968,7 +2010,12 @@ class EnhancedChatbot:
             rows.append(("Rental/Day", one_line(a_details, 'rental_price_per_day', '-'), one_line(b_details, 'rental_price_per_day', '-')))
             rows.append(("Rental/Week", one_line(a_details, 'rental_price_per_week', '-'), one_line(b_details, 'rental_price_per_week', '-')))
         else:
-            rows.append(("Price / Sq.m", one_line(a_details, 'price_per_sq_meter', '-'), one_line(b_details, 'price_per_sq_meter', '-')))
+            def get_price_sq_ft(details):
+                price = one_line(details, 'price_per_sq_meter', '-')
+                if price != '-':
+                    return convert_price_to_sq_ft(price)
+                return price
+            rows.append(("Price / Sq.ft", get_price_sq_ft(a_details), get_price_sq_ft(b_details)))
         text = "Comparison:\n"
         for r in rows:
             text += f"{r[0]}: {r[1]}  |  {r[2]}\n"
