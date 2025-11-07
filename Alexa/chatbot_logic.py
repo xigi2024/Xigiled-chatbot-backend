@@ -6,6 +6,11 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.llms import OpenAI
 from django.conf import settings
 
+# ---------------------------
+# In-memory session store (prototype)
+# ---------------------------
+SESSIONS = {}
+
 
 class EnhancedChatbot:
     """
@@ -20,11 +25,14 @@ class EnhancedChatbot:
     """
 
     def __init__(self, session_id=None):
-        self.session_id = session_id or str(uuid.uuid4())  
-        self.session_data = {
-            'asked_include_accessories': False,
-            'include_accessories': None
-        }
+        self.session_id = session_id or str(uuid.uuid4())
+        # Load session data from global store, or initialize if new
+        if self.session_id not in SESSIONS:
+            SESSIONS[self.session_id] = {
+                'asked_include_accessories': False,
+                'include_accessories': None
+            }
+        self.session_data = SESSIONS[self.session_id]
 
         # Initialize AI knowledgebase
         self.embeddings = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
@@ -53,7 +61,8 @@ class EnhancedChatbot:
                 reply = "Understood. We'll focus on the panels for now. What else can I help you with?"
                 return self._build_response(reply)
             else:
-                reply = "Please answer with Yes or No. Would you like to include controller, cabinets, and mounting structure?"
+                self.session_data['asked_include_accessories'] = False
+                reply = "Understood, let's continue. What else can I help you with?"
                 return self._build_response(reply)
 
         # 1. Greetings
