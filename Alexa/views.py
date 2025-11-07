@@ -107,6 +107,10 @@ STEPS = {
     'final_action': {
         'next': None,
         'message': "Configuration is saved! Thank you! Our support team will contact you soon at support@xigi.com."
+    },
+    'end': {
+        'next': None,
+        'message': "Configuration is saved! Thank you! Our support team will contact you soon at support@xigi.com. If you have any questions, feel free to start a new conversation."
     }
 }
 
@@ -800,11 +804,24 @@ class EnhancedChatbot:
                 "message_count": 0,
                 "product_views": [],
                 "comparison_queries": [],
-                "knowledge_queries": []
+                "knowledge_queries": [],
+                "conversation_ended": False
             }
         self.state = SESSIONS[session_id]
 
     def get_reply(self, message: str) -> dict:
+        if self.state.get('conversation_ended') and message.strip():
+            # Start a new conversation
+            self.state['current_step'] = 'greeting'
+            self.state['collected'] = {}
+            self.state['conversation_ended'] = False
+            self.state['last_intent'] = None
+            self.state['last_message'] = None
+            self.state['intent_history'] = []
+            self.state['message_count'] = 0
+            self.state['product_views'] = []
+            self.state['comparison_queries'] = []
+            self.state['knowledge_queries'] = []
         msg = message.lower().strip()
         intent = detect_intent(message)
         self.state['last_intent'] = intent
@@ -1000,6 +1017,11 @@ class EnhancedChatbot:
             return response
         elif current_step == 'final_action':
             response = self._handle_final_action(message)
+            response['reply'] = welcome_back + response['reply']
+            return response
+        elif current_step == 'end':
+            self.state['conversation_ended'] = True
+            response = self._wrap(STEPS['end']['message'], "end")
             response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'modify_options':
@@ -1271,7 +1293,7 @@ class EnhancedChatbot:
                 }
             else:
                 self.state['current_step'] = 'controller_inclusion'
-                return self._wrap(STEPS['quantity_input']['message'], "quantity_input")
+                return self._wrap(STEPS['controller_inclusion']['message'], "controller_inclusion")
         else:
             return self._wrap("Please enter a number for quantity.", "quantity_input")
 
@@ -1454,6 +1476,7 @@ class EnhancedChatbot:
                 )
             except Exception as e:
                 print(f"Error saving configuration: {e}")
+            self.state['current_step'] = 'end'
             return self._wrap(STEPS['final_action']['message'], "final_action")
         elif "modify" in m:
             self.state['current_step'] = 'modify_options'
@@ -2035,28 +2058,28 @@ class EnhancedChatbot:
         parts = []
         sel = c.get('selected_panel', {})
         if sel:
-            parts.append(f"**Type:** {sel.get('type')}\n")
-            parts.append(f"**Model:** {sel.get('model')}\n")
+            parts.append(f"Type: {sel.get('type')}\n")
+            parts.append(f"Model: {sel.get('model')}\n")
         if 'rental_duration' in c:
-            parts.append(f"**Rental Duration:** {c['rental_duration']}\n")
+            parts.append(f"Rental Duration: {c['rental_duration']}\n")
         if 'purpose' in c:
-            parts.append(f"**Purpose:** {c['purpose']}\n")
+            parts.append(f"Purpose: {c['purpose']}\n")
         if 'width' in c and 'height' in c:
-            parts.append(f"**Size:** {c['width']} x {c['height']} (ft)\n")
+            parts.append(f"Size: {c['width']} x {c['height']} (ft)\n")
         if 'quantity' in c:
-            parts.append(f"**Quantity:** {c['quantity']}\n")
-        parts.append(f"**Include controller:** {c.get('include_controller', False)}\n")
-        parts.append(f"**Installation required:** {c.get('installation', False)}\n")
+            parts.append(f"Quantity: {c['quantity']}\n")
+        parts.append(f"Include controller: {c.get('include_controller', False)}\n")
+        parts.append(f"Installation required: {c.get('installation', False)}\n")
         if 'delivery' in c:
-            parts.append(f"**Delivery:** {c['delivery']}\n")
+            parts.append(f"Delivery: {c['delivery']}\n")
         if 'company_name' in c:
-            parts.append(f"**Company:** {c['company_name']}\n")
+            parts.append(f"Company: {c['company_name']}\n")
             if c.get('contact_person'):
-                parts.append(f"**Contact:** {c.get('contact_person')}\n")
+                parts.append(f"Contact: {c.get('contact_person')}\n")
             if c.get('mobile'):
-                parts.append(f"**Mobile:** {c.get('mobile')}\n")
+                parts.append(f"Mobile: {c.get('mobile')}\n")
             if c.get('email'):
-                parts.append(f"**Email:** {c.get('email')}\n")
+                parts.append(f"Email: {c.get('email')}\n")
         return "".join(parts).rstrip()
 
 

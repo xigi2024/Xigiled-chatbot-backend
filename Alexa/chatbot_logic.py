@@ -21,7 +21,10 @@ class EnhancedChatbot:
 
     def __init__(self, session_id=None):
         self.session_id = session_id or str(uuid.uuid4())
-        self.session_data = {}
+        self.session_data = {
+            'asked_include_accessories': False,
+            'include_accessories': None
+        }
 
         # Initialize AI knowledgebase
         self.embeddings = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
@@ -36,6 +39,22 @@ class EnhancedChatbot:
     # --------------------------------------------------------
     def get_reply(self, message: str) -> dict:
         msg = message.lower().strip()
+
+        # Handle response to accessories question
+        if self.session_data.get('asked_include_accessories'):
+            if 'yes' in msg:
+                self.session_data['include_accessories'] = True
+                self.session_data['asked_include_accessories'] = False
+                reply = "Great! We'll include controllers, cabinets, and mounting structure in your quote. What else can I help you with?"
+                return self._build_response(reply)
+            elif 'no' in msg:
+                self.session_data['include_accessories'] = False
+                self.session_data['asked_include_accessories'] = False
+                reply = "Understood. We'll focus on the panels for now. What else can I help you with?"
+                return self._build_response(reply)
+            else:
+                reply = "Please answer with Yes or No. Would you like to include controller, cabinets, and mounting structure?"
+                return self._build_response(reply)
 
         # 1. Greetings
         if self._is_greeting(msg):
@@ -134,11 +153,16 @@ class EnhancedChatbot:
 
         # 12. Accessories
         if any(word in msg for word in ["accessory", "mount", "bracket", "hanger", "cooling", "fan"]):
-            reply = (
-                "We also provide accessories such as mounting kits, hanging bars, and cooling fans.\n"
-                "Would you like installation recommendations or model options?"
-            )
-            return self._build_response(reply)
+            if not self.session_data.get('asked_include_accessories'):
+                self.session_data['asked_include_accessories'] = True
+                reply = "Would you like to include controller, cabinets, and mounting structure?"
+                return self._build_response(reply)
+            else:
+                reply = (
+                    "We also provide accessories such as mounting kits, hanging bars, and cooling fans.\n"
+                    "Would you like installation recommendations or model options?"
+                )
+                return self._build_response(reply)
 
         # 13. Software / Calibration Tools
         if any(word in msg for word in ["software", "novalct", "ledvision", "ledset", "configuration"]):
