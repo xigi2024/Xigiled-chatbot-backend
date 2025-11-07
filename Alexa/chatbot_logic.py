@@ -20,7 +20,7 @@ class EnhancedChatbot:
     """
 
     def __init__(self, session_id=None):
-        self.session_id = session_id or str(uuid.uuid4())
+        self.session_id = session_id or str(uuid.uuid4())  
         self.session_data = {
             'asked_include_accessories': False,
             'include_accessories': None
