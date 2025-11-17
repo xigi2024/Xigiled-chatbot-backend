@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AlexaChatAPIView, AnalyticsAPIView, ChatDataAPIView, WelcomeAPIView, EnhancedWelcomeAPIView
+from .views import AlexaChatAPIView, AnalyticsAPIView, ChatDataAPIView, WelcomeAPIView, EnhancedWelcomeAPIView, CustomWelcomeAPIView
 from django.http import HttpResponse
 import os
 import openpyxl
@@ -499,6 +499,7 @@ urlpatterns = [
     path('chat-data/', ChatDataAPIView.as_view(), name='chat_data_api'),
     path('welcome/', WelcomeAPIView.as_view(), name='welcome_api'),
     path('enhanced-welcome/', EnhancedWelcomeAPIView.as_view(), name='enhanced_welcome_api'),
+    path('custom-welcome/', CustomWelcomeAPIView.as_view(), name='custom_welcome_api'),
     path('export-products/', export_products_view, name='export_products'),
     path('export-specs/', export_specs_view, name='export_specs'),
     path('export-guides/', export_guides_view, name='export_guides'),

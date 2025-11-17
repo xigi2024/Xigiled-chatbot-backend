@@ -17,7 +17,7 @@ class EnhancedChatbot:
     AI LED Assistant - Full Version
     --------------------------------
     • Sales & Product Adviser (controllers, panels, modules, etc.)
-    • Pricing & Warranty Guidance
+    • Pricing & Warranty Guidance  
     • Troubleshooting and Installation Assistance
     • Order & Replacement Support
     • AI Knowledgebase integration for dynamic responses
@@ -30,7 +30,8 @@ class EnhancedChatbot:
         if self.session_id not in SESSIONS:
             SESSIONS[self.session_id] = {
                 'asked_include_accessories': False,
-                'include_accessories': None
+                'include_accessories': None,
+                'standee_type': None
             }
         self.session_data = SESSIONS[self.session_id]
 
@@ -47,6 +48,12 @@ class EnhancedChatbot:
     # --------------------------------------------------------
     def get_reply(self, message: str) -> dict:
         msg = message.lower().strip()
+
+        # Handle initial greeting (empty message)
+        if not msg:
+            reply = "Hey 👋 I'm XIGI AI Assistant! Ready to explore LED panels?"
+            buttons = ["Indoor Panels", "Outdoor Panels", "Rental Panels", "Standee Panels"]
+            return self._build_buttons_response(reply, buttons)
 
         # Handle response to accessories question
         if self.session_data.get('asked_include_accessories'):
@@ -65,10 +72,42 @@ class EnhancedChatbot:
                 reply = "Understood, let's continue. What else can I help you with?"
                 return self._build_response(reply)
 
+        # Standee Panels
+        if "standee" in msg or "standee panels" in msg:
+            reply = "Standee panels are portable LED displays for events and promotions. We offer A-Type (Android-based) and I-Type (Interactive) models. Which type interests you?"
+            buttons = ["A-Type", "I-Type"]
+            return self._build_buttons_response(reply, buttons)
+
+        # Handle A-Type selection
+        if msg == "a-type":
+            self.session_data['standee_type'] = 'a-type'
+            reply = "A-Type standee panels are Android-powered for content playback. Choose your preferred size:"
+            buttons = ["32inch", "43inch", "55inch", "Custom Size"]
+            return self._build_buttons_response(reply, buttons)
+
+        # Handle I-Type selection
+        if msg == "i-type":
+            self.session_data['standee_type'] = 'i-type'
+            reply = "I-Type standee panels are interactive touchscreens. Choose your preferred size:"
+            buttons = ["6Hx1W", "6Hx3W", "Custom Size"]
+            return self._build_buttons_response(reply, buttons)
+
+        # Handle size selections for A-Type
+        if self.session_data.get('standee_type') == 'a-type' and msg in ["32inch", "43inch", "55inch", "custom size"]:
+            size = msg
+            reply = f"Great! You've selected A-Type {size}. This model features high brightness and Android OS for easy content management. Would you like pricing details or to proceed with a quote?"
+            return self._build_response(reply)
+
+        # Handle size selections for I-Type
+        if self.session_data.get('standee_type') == 'i-type' and msg in ["6hx1w", "6hx3w", "custom size"]:
+            size = msg
+            reply = f"Excellent! You've selected I-Type {size}. This interactive model supports touch gestures and multi-user interaction. Would you like pricing details or to proceed with a quote?"
+            return self._build_response(reply)
+
         # 1. Greetings
         if self._is_greeting(msg):
             reply = (
-                "Hello! I’m Alexa, your LED Sales and Support Assistant.\n"
+                "Hello! I’m XIGI AI Assistant, your LED Sales and Support Assistant.\n"
                 "How can I help you today?"
             )
             return self._build_response(reply)
@@ -105,7 +144,7 @@ class EnhancedChatbot:
             )
             return self._build_response(reply)
 
-        # 6. LED Panels
+        # 7. LED Panels
         if "led display" in msg or "panel" in msg:
             reply = (
                 "LED panels form the display surface of a video wall.\n"
@@ -115,7 +154,7 @@ class EnhancedChatbot:
             )
             return self._build_response(reply)
 
-        # 7. Receiving / Sending Cards
+        # 8. Receiving / Sending Cards
         if any(word in msg for word in ["receiving card", "sending card", "mrv", "rv", "a8", "a10"]):
             reply = (
                 "Receiving and sending cards transmit image data between controllers and panels.\n"
@@ -301,5 +340,8 @@ class EnhancedChatbot:
 
     def _build_response(self, reply: str) -> dict:
         return {"session_id": self.session_id, "reply": reply}
+
+    def _build_buttons_response(self, reply: str, buttons: list) -> dict:
+        return {"session_id": self.session_id, "reply": reply, "type": "buttons", "buttons": buttons}
   
   

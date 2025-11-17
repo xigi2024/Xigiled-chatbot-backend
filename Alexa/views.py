@@ -1,5 +1,5 @@
-# Alexa/views.py
 from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.response import Response
 from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
@@ -26,7 +26,7 @@ SESSIONS = {}
 STEPS = {
     'greeting': {
         'next': 'panel_category',
-        'message': "Hello! Welcome to XIGI LED Assistant. What type of LED panels are you interested in? (Indoor, Outdoor, or Rental)"
+        'message': "Hello! Welcome to XIGI LED Assistant. What type of LED panels are you interested in? (Indoor, Outdoor, Rental, or Standee)"
     },
     'application_purpose': {
         'next': 'panel_category',
@@ -52,7 +52,9 @@ STEPS = {
     },
     'purpose_input': {
         'next': 'accessories_selection',
-        'message': "What will you use this LED panel for? (e.g., Mall, Event Hall, Studio, Outdoor Stage, Church, Retail, Manufacturing Factory)"
+        'message': "What will you use this LED panel for?",
+        'type': 'buttons',
+        'buttons': ['Mall', 'Event Hall', 'Studio', 'Outdoor Stage', 'Church', 'Retail', 'Manufacturing Factory', 'Temple', 'Rental Event']
     },
     'accessories_selection': {
         'next': 'quantity_input',
@@ -70,27 +72,27 @@ STEPS = {
     },
     'installation': {
         'next': 'delivery_location',
-        'message': "Please provide delivery location."
+        'message': "Do you need on-site installation? (Yes/No)"
     },
     'delivery_location': {
         'next': 'client_info',
-        'message': "Please provide your company name."
+        'message': "Please provide delivery location."
     },
     'client_info': {
-        'next': 'review_confirmation',
-        'message': "Please provide contact person name."
+        'next': 'contact_person',
+        'message': "Please provide your company name."
     },
     'contact_person': {
         'next': 'mobile_number',
-        'message': "Please provide mobile number."
+        'message': "Please provide contact person name."
     },
     'mobile_number': {
         'next': 'email_address',
-        'message': "Please provide email address."
+        'message': "Please provide mobile number."
     },
     'email_address': {
         'next': 'review_confirmation',
-        'message': "All information collected. Would you like to review your configuration? (Yes/No)"
+        'message': "Please provide email address."
     },
     'review_confirmation': {
         'next': 'final_action',
@@ -119,10 +121,10 @@ STEPS = {
 # ---------------------------
 INDOOR_SPECS = {
     'P1.25mm': {
-        'module_resolutions': ['256x128'],
+        'module_resolutions': ['256x128 mm'],
         'led_types': ['SMD 3 in1'],
-        'brightness_options': ['600-800'],
-        'module_sizes': ['320x160'],
+        'brightness_options': ['600-800 nits'],
+        'Dimensions': ['320x160 mm'],
         'scan_times': ['1/64Scan'],
         'pixel_pitch': 'P1.25mm',
         'ip_rating': 'IP30',
@@ -130,10 +132,10 @@ INDOOR_SPECS = {
         'price_per_cabinet': '₹60,000 – ₹80,000'
     },
     'P2.5mm': {
-        'module_resolutions': ['128x64'],
+        'module_resolutions': ['128x64 mm'],
         'led_types': ['SMD 3 in1'],
-        'brightness_options': ['800-1000'],
-        'module_sizes': ['320x160'],
+        'brightness_options': ['800-1000 nits'],
+        'Dimensions': ['320x160 mm'],
         'scan_times': ['1/32Scan'],
         'pixel_pitch': 'P2.5mm',
         'ip_rating': 'IP30',
@@ -141,10 +143,10 @@ INDOOR_SPECS = {
         'price_per_cabinet': '₹25,000 – ₹32,000'
     },
     'P3mm': {
-        'module_resolutions': ['192x192'],
+        'module_resolutions': ['192x192 mm'],
         'led_types': ['SMD 3 in1'],
-        'brightness_options': ['900'],
-        'module_sizes': ['320x160'],
+        'brightness_options': ['900 nits'],
+        'Dimensions': ['320x160 mm'],
         'scan_times': ['1/16Scan'],
         'pixel_pitch': 'P3mm',
         'ip_rating': 'IP30',
@@ -152,10 +154,10 @@ INDOOR_SPECS = {
         'price_per_cabinet': '₹20,000 – ₹25,000'
     },
     'P3.91mm': {
-        'module_resolutions': ['64x64'],
+        'module_resolutions': ['64x64 mm'],
         'led_types': ['SMD 3 in1'],
-        'brightness_options': ['800-1000'],
-        'module_sizes': ['250x250'],
+        'brightness_options': ['800-1000 nits'],
+        'Dimensions': ['250x250 mm'],
         'scan_times': ['1/16Scan'],
         'pixel_pitch': 'P3.91mm',
         'ip_rating': 'IP30',
@@ -163,10 +165,10 @@ INDOOR_SPECS = {
         'price_per_cabinet': '₹18,000 – ₹22,000'
     },
     'P4.81mm': {
-        'module_resolutions': ['52x52'],
+        'module_resolutions': ['52x52 mm'],
         'led_types': ['SMD 3 in1'],
-        'brightness_options': ['800-1000'],
-        'module_sizes': ['250x250'],
+        'brightness_options': ['800-1000 nits'],
+        'Dimensions': ['250x250 mm'],
         'scan_times': ['1/13Scan'],
         'pixel_pitch': 'P4.81mm',
         'ip_rating': 'IP30',
@@ -174,10 +176,10 @@ INDOOR_SPECS = {
         'price_per_cabinet': '₹16,000 – ₹20,000'
     },
     'P6mm': {
-        'module_resolutions': ['32x16'],
+        'module_resolutions': ['32x16 mm'],
         'led_types': ['White LED'],
-        'brightness_options': ['800-1000'],
-        'module_sizes': ['192x96'],
+        'brightness_options': ['800-1000 nits'],
+        'Dimensions': ['192x96 mm'],
         'driving_modes': ['1/8Scan'],
         'pixel_pitch': 'P6mm',
         'ip_rating': 'IP30',
@@ -185,10 +187,10 @@ INDOOR_SPECS = {
         'price_per_cabinet': '₹14,000 – ₹17,000'
     },
     'P10mm': {
-        'module_resolutions': ['32x16'],
+        'module_resolutions': ['32x16 mm'],
         'led_types': ['White LED'],
-        'brightness_options': ['800-1000'],
-        'module_sizes': ['320x160'],
+        'brightness_options': ['800-1000 nits'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/4Scan'],
         'pixel_pitch': 'P10mm',
         'ip_rating': 'IP30',
@@ -200,28 +202,28 @@ INDOOR_SPECS = {
 
 OUTDOOR_SPECS = {
     'P3.076mm': {
-        'module_resolutions': ['104x52'],
+        'module_resolutions': ['104x52 mm'],
         'led_types': ['SMD1415'],
         'brightness_options': ['>5000'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/13Scan'],
         'pixel_pitch': 'P3.076mm',
         'ip_rating': 'IP65'
     },
     'P4mm': {
-        'module_resolutions': ['80x40'],
+        'module_resolutions': ['80x40 mm'],
         'led_types': ['SMD1921'],
         'brightness_options': ['>5500'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/10Scan'],
         'pixel_pitch': 'P4mm',
         'ip_rating': 'IP67'
     },
     'P5mm': {
-        'module_resolutions': ['64x32'],
+        'module_resolutions': ['64x32 mm'],
         'led_types': ['SMD1921'],
         'brightness_options': ['>5200'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/8Scan'],
         'pixel_pitch': 'P5mm',
         'ip_rating': 'IP67',
@@ -229,10 +231,10 @@ OUTDOOR_SPECS = {
         'price_per_cabinet': '₹15,000 – ₹18,000'
     },
     'P6.67mm': {
-        'module_resolutions': ['48x24'],
+        'module_resolutions': ['48x24 mm'],
         'led_types': ['SMD3535'],
         'brightness_options': ['>5500'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/6Scan'],
         'pixel_pitch': 'P6.67mm',
         'ip_rating': 'IP67',
@@ -240,19 +242,19 @@ OUTDOOR_SPECS = {
         'price_per_cabinet': '₹14,000 – ₹17,000'
     },
     'P8mm': {
-        'module_resolutions': ['40x20'],
+        'module_resolutions': ['40x20 mm'],
         'led_types': ['SMD3535'],
         'brightness_options': ['>5800'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/5Scan'],
         'pixel_pitch': 'P8mm',
         'ip_rating': 'IP67'
     },
     'P10mm': {
-        'module_resolutions': ['32x16'],
+        'module_resolutions': ['32x16 mm'],
         'led_types': ['SMD3535'],
         'brightness_options': ['>6000'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/2Scan'],
         'pixel_pitch': 'P10mm',
         'ip_rating': 'IP67',
@@ -263,14 +265,42 @@ OUTDOOR_SPECS = {
 }
 
 # ---------------------------
+# Standee Panel Specs
+# ---------------------------
+STANDEE_SPECS = {
+    'I-type': {
+        'module_resolutions': ['128x64 mm'],
+        'led_types': ['SMD 3 in1'],
+        'brightness_options': ['1000'],
+        'Dimensions': ['320x160 mm'],
+        'scan_times': ['1/32Scan'],
+        'pixel_pitch': 'P2.5mm',
+        'ip_rating': 'IP30',
+        'price_per_sq_meter': '₹50,000 – ₹70,000',
+        'price_per_cabinet': '₹15,000 – ₹20,000'
+    },
+    'A-type': {
+        'module_resolutions': ['64x64 mm'],
+        'led_types': ['SMD 3 in1'],
+        'brightness_options': ['800'],
+        'Dimensions': ['250x250 mm'],
+        'scan_times': ['1/16Scan'],
+        'pixel_pitch': 'P3mm',
+        'ip_rating': 'IP30',
+        'price_per_sq_meter': '₹45,000 – ₹65,000',
+        'price_per_cabinet': '₹12,000 – ₹18,000'
+    }
+}
+
+# ---------------------------
 # Rental Panel Specs - similar to indoor/outdoor but with rental-specific pricing and durability
 # ---------------------------
 RENTAL_SPECS = {
     'P2.5mm Rental': {
-        'module_resolutions': ['128x64'],
+        'module_resolutions': ['128x64 mm'],
         'led_types': ['SMD 3 in1'],
         'brightness_options': ['800-1000'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'scan_times': ['1/32Scan'],
         'pixel_pitch': 'P2.5mm',
         'ip_rating': 'IP30',
@@ -281,10 +311,10 @@ RENTAL_SPECS = {
         'availability': 'Immediate'
     },
     'P3.91mm Rental': {
-        'module_resolutions': ['64x64'],
+        'module_resolutions': ['64x64 mm'],
         'led_types': ['SMD 3 in1'],
         'brightness_options': ['800-1000'],
-        'module_sizes': ['250x250'],
+        'Dimensions': ['250x250 mm'],
         'scan_times': ['1/16Scan'],
         'pixel_pitch': 'P3.91mm',
         'ip_rating': 'IP30',
@@ -295,10 +325,10 @@ RENTAL_SPECS = {
         'availability': 'Immediate'
     },
     'P4.81mm Rental': {
-        'module_resolutions': ['52x52'],
+        'module_resolutions': ['52x52 mm'],
         'led_types': ['SMD 3 in1'],
         'brightness_options': ['800-1000'],
-        'module_sizes': ['250x250'],
+        'Dimensions': ['250x250 mm'],
         'scan_times': ['1/13Scan'],
         'pixel_pitch': 'P4.81mm',
         'ip_rating': 'IP30',
@@ -309,10 +339,10 @@ RENTAL_SPECS = {
         'availability': 'Immediate'
     },
     'P5mm Outdoor Rental': {
-        'module_resolutions': ['64x32'],
+        'module_resolutions': ['64x32 mm'],
         'led_types': ['SMD1921'],
         'brightness_options': ['>5200'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/8Scan'],
         'pixel_pitch': 'P5mm',
         'ip_rating': 'IP67',
@@ -323,10 +353,10 @@ RENTAL_SPECS = {
         'availability': 'Immediate'
     },
     'P6.67mm Outdoor Rental': {
-        'module_resolutions': ['48x24'],
+        'module_resolutions': ['48x24 mm'],
         'led_types': ['SMD3535'],
         'brightness_options': ['>5500'],
-        'module_sizes': ['320x160'],
+        'Dimensions': ['320x160 mm'],
         'driving_modes': ['1/6Scan'],
         'pixel_pitch': 'P6.67mm',
         'ip_rating': 'IP67',
@@ -738,6 +768,7 @@ def convert_price_to_sq_ft(price_str):
 ALL_INDOOR_KEYS = list(INDOOR_SPECS.keys())
 ALL_OUTDOOR_KEYS = list(OUTDOOR_SPECS.keys())
 ALL_RENTAL_KEYS = list(RENTAL_SPECS.keys())
+ALL_STANDEE_KEYS = list(STANDEE_SPECS.keys())
 
 
 # ---------------------------
@@ -755,7 +786,7 @@ def detect_intent(message: str) -> str:
     ]
 
     # panels (explicit)
-    panel_keywords = ["indoor panel", "indoor panels", "outdoor panel", "outdoor panels", "rental panel", "rental panels", "indoor", "outdoor", "rental"]
+    panel_keywords = ["indoor panel", "indoor panels", "outdoor panel", "outdoor panels", "rental panel", "rental panels", "standee panel", "standee panels", "indoor", "outdoor", "rental", "standee"]
 
     # comparison
     if "compare" in m:
@@ -839,12 +870,22 @@ class EnhancedChatbot:
         elif intent == "panels" and message not in self.state.get('product_views', []):
             self.state.setdefault('product_views', []).append(message)
 
-        # Check for session resumption
-        is_resumption = self.state.get('message_count', 0) > 1 and 'saved' not in self.state.get('collected', {})
-        if is_resumption:
-            welcome_back = "Welcome back! Let's continue from where we left off.\n\n"
-        else:
-            welcome_back = ""
+        # Handle response to accessories question
+        if self.state.get('asked_include_accessories'):
+            if 'yes' in msg:
+                self.state['include_accessories'] = True
+                self.state['asked_include_accessories'] = False
+                reply = "Great! We'll include controllers, cabinets, and mounting structure in your quote. What else can I help you with?"
+                return self._build_response(reply)
+            elif 'no' in msg:
+                self.state['include_accessories'] = False
+                self.state['asked_include_accessories'] = False
+                reply = "Understood. We'll focus on the panels for now. What else can I help you with?"
+                return self._build_response(reply)
+            else:
+                self.state['asked_include_accessories'] = False
+                reply = "Understood, let's continue. What else can I help you with?"
+                return self._build_response(reply)
 
         log_the_intent_for_analytics = True
         if log_the_intent_for_analytics:
@@ -902,34 +943,31 @@ class EnhancedChatbot:
             except Exception as e:
                 print(f"Error logging chat: {e}")
 
+
+
+
+
         # Handle specific intents first, regardless of current step
         if intent == "compare":
             response = self._handle_compare(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif intent == "panels":
             response = self._handle_panels_request(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif intent == "select_panel":
             response = self._show_panel_details(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif intent == "guide":
             response = self._handle_guide(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif intent == "knowledge":
             response = self._handle_knowledge(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif intent == "controllers":
             response = self._wrap("We offer LED controllers such as Nova, Colorlight, and others for managing display signals. Controllers are essential for powering and controlling the panels. Compatibility depends on the panel model; please select a panel to get specific recommendations.", "controllers")
-            response['reply'] = welcome_back + response['reply']
             return response
         elif intent == "price":
             response = self._handle_price(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif intent == "support":
             m = message.lower()
@@ -939,109 +977,100 @@ class EnhancedChatbot:
                 response = self._wrap("For spare parts availability, please contact our support team at support@xigi.com or call +1-800-123-4567.", "support")
             else:
                 response = self._wrap("For support issues, please contact our technical team at support@xigi.com or call +1-800-123-4567.", "support")
-            response['reply'] = welcome_back + response['reply']
             return response
 
         # 2. Direct Purpose Input
         if any(word in msg for word in PURPOSE_RECOMMENDATIONS.keys()):
             response = self._handle_application_purpose(msg)
-            response['reply'] = welcome_back + response['reply']
+            return response
+
+        # Handle step-specific responses before general intent detection
+        current_step = self.state.get('current_step', 'greeting')
+        if current_step == 'standee_type_selection':
+            response = self._handle_standee_type_selection(message)
+            return response
+        elif current_step == 'awaiting_custom_standee':
+            response = self._handle_custom_standee(message)
             return response
 
         # routing based on current step for linear conversation flow
-        current_step = self.state.get('current_step', 'greeting')
 
         if current_step == 'greeting':
             response = self._handle_greeting(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'panel_category':
             response = self._handle_panel_category(message)
-            response['reply'] = welcome_back + response['reply']
             return response
+
         elif current_step == 'panel_selection':
             response = self._handle_panel_selection(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'application_purpose':
             response = self._handle_application_purpose(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'accessories_selection':
             response = self._handle_accessories_selection(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'rental_duration':
             response = self._handle_rental_duration(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'size_input':
             response = self._handle_size_input(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'quantity_input':
             response = self._handle_quantity_input(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'controller_inclusion':
             response = self._handle_controller_inclusion(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'installation':
             response = self._handle_installation(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'delivery_location':
             response = self._handle_delivery_location(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'client_info':
             response = self._handle_client_info(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'contact_person':
             response = self._handle_contact_person(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'mobile_number':
             response = self._handle_mobile_number(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'email_address':
             response = self._handle_email_address(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'review_confirmation':
             response = self._handle_review_confirmation(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'final_action':
             response = self._handle_final_action(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'end':
             self.state['conversation_ended'] = True
             response = self._wrap(STEPS['end']['message'], "end")
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'modify_options':
             response = self._handle_modify_options(message)
-            response['reply'] = welcome_back + response['reply']
             return response
         elif current_step == 'multiple_modifications':
             response = self._handle_multiple_modifications(message)
-            response['reply'] = welcome_back + response['reply']
+            return response
+        elif current_step == 'standee_type_selection':
+            response = self._handle_standee_type_selection(message)
+            return response
+        elif current_step == 'awaiting_custom_standee':
+            response = self._handle_custom_standee(message)
             return response
 
         # Check for stateful follow-up if in collection mode
         follow_up = self._stateful_follow_up(message)
         if follow_up:
-            follow_up['reply'] = welcome_back + follow_up['reply']
             return follow_up
 
         # fallback general
         response = self._wrap("Good afternoon. How can I assist you today? You can ask for 'indoor panels' or 'outdoor panels'.", "general")
-        response['reply'] = welcome_back + response['reply']
         return response
 
     def _handle_greeting(self, message: str) -> dict:
@@ -1051,7 +1080,7 @@ class EnhancedChatbot:
             "reply": STEPS['greeting']['message'],
             "intent": "greeting",
             "type": "buttons",
-            "buttons": ["Indoor Panels", "Outdoor Panels", "Rental Panels"]
+            "buttons": ["Indoor Panels", "Outdoor Panels", "Rental Panels", "Standee Panels"]
         }
 
     def _handle_panel_category(self, message: str) -> dict:
@@ -1089,8 +1118,21 @@ class EnhancedChatbot:
                 "category": "rental",
                 "buttons": ALL_RENTAL_KEYS
             }
+        elif "standee" in m:
+            self.state['collected']['panel_type'] = 'standee'
+            self.state['current_step'] = 'size_input'
+            return {
+                "session_id": self.session_id,
+                "reply": "Standee panels are portable LED displays for events and promotions. Please select a size:",
+                "intent": "panel_category",
+                "type": "buttons",
+                "category": "standee",
+                "buttons": ["32inch", "43inch", "55inch", "6Hx1W", "6Hx3W", "Custom Size"]
+            }
         else:
-            return self._wrap("Please specify 'indoor', 'outdoor', or 'rental' for the panels.", "panel_category")
+            return self._wrap("Please specify 'indoor', 'outdoor', 'rental', or 'standee' for the panels.", "panel_category")
+
+
 
     def _handle_panel_selection(self, message: str) -> dict:
         key = self._normalize_key(message)
@@ -1101,6 +1143,8 @@ class EnhancedChatbot:
             specs = OUTDOOR_SPECS
         elif panel_type == 'rental':
             specs = RENTAL_SPECS
+        elif panel_type == 'standee':
+            specs = STANDEE_SPECS
         else:
             specs = {}
         if key in specs:
@@ -1120,7 +1164,7 @@ class EnhancedChatbot:
                 self.state['current_step'] = 'size_input'
 
                 panel_details = specs[key]
-                formatted_specs = self._format_specs(key, panel_details, "Selected" if panel_type == 'indoor' else "Selected Outdoor")
+                formatted_specs = self._format_specs(key, panel_details, "Selected" if panel_type == 'indoor' else "Selected Outdoor" if panel_type == 'outdoor' else "Selected Rental" if panel_type == 'rental' else "Selected Standee")
                 product_bundles = get_product_bundles(panel_type)
                 product_recs = get_recommendations(panel_type)
 
@@ -1165,7 +1209,13 @@ class EnhancedChatbot:
                     "buttons": STEPS['accessories_selection']['buttons']
                 }
         else:
-            return self._wrap("Please provide a valid application purpose (e.g., 'Event Hall', 'Studio', 'Mall', 'Outdoor Stage', 'Church', 'Retail').", "application_purpose")
+            return {
+                "session_id": self.session_id,
+                "reply": "Please select your application purpose:",
+                "intent": "application_purpose",
+                "type": "buttons",
+                "buttons": STEPS['purpose_input']['buttons']
+            }
 
     def _handle_rental_duration(self, message: str) -> dict:
         m = message.lower().strip()
@@ -1201,56 +1251,104 @@ class EnhancedChatbot:
 
     def _handle_size_input(self, message: str) -> dict:
         m = message.lower().strip()
-        if m == "5h x 3w ft" or m == "5x3 ft" or m == "5x3":
-            self.state['collected']['width'] = 5.0
-            self.state['collected']['height'] = 3.0
-        elif m == "7h x 3w ft" or m == "7x3 ft" or m == "7x3":
-            self.state['collected']['width'] = 7.0
-            self.state['collected']['height'] = 3.0
-        elif m == "10h x 6w ft" or m == "10x6 ft" or m == "10x6":
-            self.state['collected']['width'] = 10.0
-            self.state['collected']['height'] = 6.0
-        elif m == "12h x 8w ft" or m == "12x8 ft" or m == "12x8":
-            self.state['collected']['width'] = 12.0
-            self.state['collected']['height'] = 8.0
-        elif m == "15h x 10w ft" or m == "15x10 ft" or m == "15x10":
-            self.state['collected']['width'] = 15.0
-            self.state['collected']['height'] = 10.0
-        elif m == "custom size":
-            # Prompt for custom size input
-            return {
-                "session_id": self.session_id,
-                "reply": "Please enter your custom screen width and height in feet/meters (e.g., '20x12 ft' or '10x6 meters').",
-                "intent": "custom_size_input",
-                "type": "text"
-            }
-        else:
-            nums = re.findall(r"(\d+(?:\.\d+)?)", message)
-            if len(nums) >= 2:
-                self.state['collected']['width'] = float(nums[0])
-                self.state['collected']['height'] = float(nums[1])
-            else:
+        panel_type = self.state['collected'].get('panel_type')
+
+        if panel_type == 'standee':
+            # Infer standee type from size selection
+            if m in ["32inch", "43inch", "55inch"]:
+                self.state['collected']['standee_type'] = 'a-type'
+                self.state['collected']['standee_size'] = m
+            elif m in ["6hx1w", "6hx3w"]:
+                self.state['collected']['standee_type'] = 'a-type'
+                self.state['collected']['standee_size'] = m.upper()
+            elif m == "custom size":
+                # Prompt for custom standee size and type
+                self.state['current_step'] = 'awaiting_custom_standee'
                 return {
                     "session_id": self.session_id,
-                    "reply": "Select your screen size:",
+                    "reply": "Please specify the standee type (A-Type or I-Type) and size (e.g., 'A-Type 50inch' or 'I-Type 8Hx4W').",
+                    "intent": "custom_standee_size_input",
+                    "type": "text"
+                }
+            else:
+                # Invalid size
+                standee_type = self.state['collected'].get('standee_type')
+                if standee_type == 'a-type':
+                    buttons = ["32inch", "43inch", "55inch", "Custom Size"]
+                elif standee_type == 'i-type':
+                    buttons = ["6Hx1W", "6Hx3W", "Custom Size"]
+                else:
+                    buttons = ["32inch", "43inch", "55inch", "6Hx1W", "6Hx3W", "Custom Size"]
+                return {
+                    "session_id": self.session_id,
+                    "reply": "Please select a valid standee size:",
                     "intent": "size_input",
                     "type": "buttons",
-                    "buttons": ["5H x 3W ft", "7H x 3W ft", "10H x 6W ft", "12H x 8W ft", "15H x 10W ft", "Custom Size"]
+                    "buttons": buttons
                 }
 
-        if self.state.get('modifying'):
-            self.state['current_step'] = 'review_confirmation'
-            summary = self._build_summary(self.state['collected'])
-            return {
-                "session_id": self.session_id,
-                "reply": f"Size updated! Here is the updated summary:\n\n{summary}\n\nWould you like to save this configuration or modify something else? (Save/Modify)",
-                "intent": "review_confirmation",
-                "type": "summary",
-                "summary": self.state['collected']
-            }
+            if self.state.get('modifying'):
+                self.state['current_step'] = 'review_confirmation'
+                summary = self._build_summary(self.state['collected'])
+                return {
+                    "session_id": self.session_id,
+                    "reply": f"Size updated! Here is the updated summary:\n\n{summary}\n\nWould you like to save this configuration or modify something else? (Save/Modify)",
+                    "intent": "review_confirmation",
+                    "type": "summary",
+                    "summary": self.state['collected']
+                }
+            else:
+                self.state['current_step'] = 'purpose_input'
+                return self._wrap(STEPS['purpose_input']['message'], "purpose_input")
         else:
-            self.state['current_step'] = 'purpose_input'
-            return self._wrap(STEPS['purpose_input']['message'], "purpose_input")
+            # Handle regular panel sizes
+            if m == "5h x 3w ft" or m == "5x3 ft" or m == "5x3":
+                self.state['collected']['width'] = 5.0
+                self.state['collected']['height'] = 3.0
+            elif m == "7h x 3w ft" or m == "7x3 ft" or m == "7x3":
+                self.state['collected']['width'] = 7.0
+                self.state['collected']['height'] = 3.0
+            elif m == "10h x 6w ft" or m == "10x6 ft" or m == "10x6":
+                self.state['collected']['width'] = 10.0
+                self.state['collected']['height'] = 6.0
+            elif m == "12h x 8w ft" or m == "12x8 ft" or m == "12x8":
+                self.state['collected']['width'] = 12.0
+                self.state['collected']['height'] = 8.0
+            elif m == "15h x 10w ft" or m == "15x10 ft" or m == "15x10":
+                self.state['collected']['width'] = 15.0
+                self.state['collected']['height'] = 10.0
+            elif m == "custom size":
+                # Prompt for custom size input
+                return {
+                    "session_id": self.session_id,
+                    "reply": "Please enter your custom screen width and height in feet/meters (e.g., '20x12 ft' or '10x6 meters').",
+                    "intent": "custom_size_input",
+                    "type": "text"
+                }
+            else:
+                nums = re.findall(r"(\d+(?:\.\d+)?)", message)
+                if len(nums) >= 2:
+                    self.state['collected']['width'] = float(nums[0])
+                    self.state['collected']['height'] = float(nums[1])
+            if self.state.get('modifying'):
+                self.state['current_step'] = 'review_confirmation'
+                summary = self._build_summary(self.state['collected'])
+                return {
+                    "session_id": self.session_id,
+                    "reply": f"Size updated! Here is the updated summary:\n\n{summary}\n\nWould you like to save this configuration or modify something else? (Save/Modify)",
+                    "intent": "review_confirmation",
+                    "type": "summary",
+                    "summary": self.state['collected']
+                }
+            else:
+                self.state['current_step'] = 'purpose_input'
+                return {
+                    "session_id": self.session_id,
+                    "reply": STEPS['purpose_input']['message'],
+                    "intent": "purpose_input",
+                    "type": "buttons",
+                    "buttons": STEPS['purpose_input']['buttons']
+        }
 
     def _handle_accessories_selection(self, message: str) -> dict:
         m = message.lower()
@@ -1318,7 +1416,7 @@ class EnhancedChatbot:
             }
         else:
             self.state['current_step'] = 'installation'
-            return self._wrap(STEPS['controller_inclusion']['message'], "controller_inclusion")
+            return self._wrap(STEPS['installation']['message'], "installation")
 
     def _handle_installation(self, message: str) -> dict:
         m = message.lower()
@@ -1327,21 +1425,21 @@ class EnhancedChatbot:
         elif m in ("no", "n"):
             self.state['collected']['installation'] = False
         else:
-            return self._wrap("Please answer 'yes' or 'no' for installation.", "installation")
+            return self._wrap("Please answer 'yes' or 'no'.", "installation")
 
         if self.state.get('modifying'):
             self.state['current_step'] = 'review_confirmation'
             summary = self._build_summary(self.state['collected'])
             return {
                 "session_id": self.session_id,
-                "reply": f"Installation requirement updated! Here is the updated summary:\n\n{summary}\n\nWould you like to save this configuration or modify something else? (Save/Modify)",
+                "reply": f"Installation updated! Here is the updated summary:\n\n{summary}\n\nWould you like to save this configuration or modify something else? (Save/Modify)",
                 "intent": "review_confirmation",
                 "type": "summary",
                 "summary": self.state['collected']
             }
         else:
             self.state['current_step'] = 'delivery_location'
-            return self._wrap(STEPS['installation']['message'], "installation")
+            return self._wrap(STEPS['delivery_location']['message'], "delivery_location")
 
     def _handle_delivery_location(self, message: str) -> dict:
         if len(message.strip()) > 1:
@@ -1358,7 +1456,7 @@ class EnhancedChatbot:
                 }
             else:
                 self.state['current_step'] = 'client_info'
-                return self._wrap(STEPS['delivery_location']['message'], "delivery_location")
+                return self._wrap(STEPS['client_info']['message'], "client_info")
         else:
             return self._wrap("Please provide a valid delivery location.", "delivery_location")
 
@@ -1377,7 +1475,7 @@ class EnhancedChatbot:
                 }
             else:
                 self.state['current_step'] = 'contact_person'
-                return self._wrap(STEPS['client_info']['message'], "client_info")
+                return self._wrap(STEPS['contact_person']['message'], "contact_person")
         else:
             return self._wrap("Please provide a valid company name.", "client_info")
 
@@ -1396,7 +1494,7 @@ class EnhancedChatbot:
                 }
             else:
                 self.state['current_step'] = 'mobile_number'
-                return self._wrap(STEPS['contact_person']['message'], "contact_person")
+                return self._wrap(STEPS['mobile_number']['message'], "contact_person")
         else:
             return self._wrap("Please provide a valid contact person name.", "contact_person")
 
@@ -1416,7 +1514,7 @@ class EnhancedChatbot:
                 }
             else:
                 self.state['current_step'] = 'email_address'
-                return self._wrap(STEPS['mobile_number']['message'], "mobile_number")
+                return self._wrap(STEPS['email_address']['message'], "mobile_number")
         else:
             return self._wrap("Please provide a valid mobile number.", "mobile_number")
 
@@ -1436,7 +1534,7 @@ class EnhancedChatbot:
                 }
             else:
                 self.state['current_step'] = 'review_confirmation'
-                return self._wrap(STEPS['email_address']['message'], "email_address")
+                return self._wrap(STEPS['review_confirmation']['message'], "email_address")
         else:
             return self._wrap("Please provide a valid email address.", "email_address")
 
@@ -1651,6 +1749,48 @@ class EnhancedChatbot:
             "summary": self.state['collected']
         }
 
+    def _handle_standee_type_selection(self, message: str) -> dict:
+        m = message.lower().strip()
+        if m == "a-type":
+            self.state['collected']['standee_type'] = 'a-type'
+            self.state['current_step'] = 'size_input'
+            return {
+                "session_id": self.session_id,
+                "reply": "Great! You've selected A-Type standee panels. Here are the available sizes:",
+                "intent": "standee_type_selection",
+                "type": "buttons",
+                "buttons": ["32inch", "43inch", "55inch", "Custom Size"]
+            }
+        elif m == "i-type":
+            self.state['collected']['standee_type'] = 'i-type'
+            self.state['current_step'] = 'size_input'
+            return {
+                "session_id": self.session_id,
+                "reply": "Great! You've selected I-Type standee panels. Here are the available sizes:",
+                "intent": "standee_type_selection",
+                "type": "buttons",
+                "buttons": ["6Hx1W", "6Hx3W", "Custom Size"]
+            }
+        else:
+            return self._wrap("Please select 'A-Type' or 'I-Type' for standee panels.", "standee_type_selection")
+
+    def _handle_custom_standee(self, message: str) -> dict:
+        m = message.lower().strip()
+        # Parse custom standee size and type, e.g., "A-Type 50inch" or "I-Type 8Hx4W"
+        parts = m.split()
+        if len(parts) >= 2:
+            standee_type = parts[0]
+            size = ' '.join(parts[1:])
+            if standee_type in ['a-type', 'i-type']:
+                self.state['collected']['standee_type'] = standee_type
+                self.state['collected']['standee_size'] = size
+                self.state['current_step'] = 'purpose_input'
+                return self._wrap(STEPS['purpose_input']['message'], "purpose_input")
+            else:
+                return self._wrap("Please specify 'A-Type' or 'I-Type' followed by the size.", "awaiting_custom_standee")
+        else:
+            return self._wrap("Please provide the standee type and size, e.g., 'A-Type 50inch'.", "awaiting_custom_standee")
+
     # Panels intent - return list of panel names as buttons
     def _handle_panels_request(self, message: str) -> dict:
         m = message.lower()
@@ -1682,8 +1822,20 @@ class EnhancedChatbot:
                 "category": "rental",
                 "buttons": ALL_RENTAL_KEYS
             }
+        if "standee" in m:
+            # For standee, set panel_type and go to type selection
+            self.state['collected']['panel_type'] = 'standee'
+            self.state['current_step'] = 'standee_type_selection'
+            return {
+                "session_id": self.session_id,
+                "reply": "Here are our standee panels. Select the type:",
+                "intent": "panels",
+                "type": "buttons",
+                "category": "standee",
+                "buttons": ["A-Type", "I-Type"]
+            }
         # if ambiguous
-        return self._wrap("Do you want indoor, outdoor, or rental panels? Please say 'indoor panels', 'outdoor panels', or 'rental panels'.", "panels")
+        return self._wrap("Do you want indoor, outdoor, rental, or standee panels? Please say 'indoor panels', 'outdoor panels', 'rental panels', or 'standee panels'.", "panels")
 
     # When user clicks a panel button (frontend should send the panel name as message)
     def _show_panel_details(self, message: str) -> dict:
@@ -1722,7 +1874,7 @@ class EnhancedChatbot:
             module_sizes = specs.get('module_sizes', [])
             hxw = module_sizes[0] if module_sizes else 'N/A'
             price_sq_ft = convert_price_to_sq_ft(specs.get('price_per_sq_meter', 'N/A'))
-            reply += f"**Price:** Price/Sq.ft ({hxw}): {price_sq_ft}, Price/Cabinet: {specs.get('price_per_cabinet', 'N/A')}\n\n"
+            reply += f"**Price:** Price/Sq.ft ({hxw}): {price_sq_ft}\n\n"
         reply += "\n"
 
         if panel_type == 'rental':
@@ -1963,17 +2115,17 @@ class EnhancedChatbot:
         # Accept variants: "p3mm", "P3mm", "p3.91mm", "p391", etc.
         s = msg.strip()
         # If exact match in keys
-        if s in INDOOR_SPECS or s in OUTDOOR_SPECS:
+        if s in INDOOR_SPECS or s in OUTDOOR_SPECS or s in STANDEE_SPECS or s in RENTAL_SPECS:
             return s
         up = s.upper()
         # try uppercase keys
-        for k in list(INDOOR_SPECS.keys()) + list(OUTDOOR_SPECS.keys()):
+        for k in list(INDOOR_SPECS.keys()) + list(OUTDOOR_SPECS.keys()) + list(STANDEE_SPECS.keys()) + list(RENTAL_SPECS.keys()):
             if k.upper() == up:
                 return k
         # try adding 'mm' if missing
         if not up.endswith("MM"):
             up2 = up + "MM"
-            for k in list(INDOOR_SPECS.keys()) + list(OUTDOOR_SPECS.keys()):
+            for k in list(INDOOR_SPECS.keys()) + list(OUTDOOR_SPECS.keys()) + list(STANDEE_SPECS.keys()) + list(RENTAL_SPECS.keys()):
                 if k.upper() == up2:
                     return k
         return s
@@ -1999,7 +2151,7 @@ class EnhancedChatbot:
         lines.append(f"Module Resolution: {', '.join(details.get('module_resolutions', []))}")
         lines.append(f"LED Type: {', '.join(details.get('led_types', []))}")
         lines.append(f"Brightness: {', '.join(details.get('brightness_options', []))}")
-        lines.append(f"Module Size: {', '.join(details.get('module_sizes', []))}")
+        lines.append(f"Dimension: {', '.join(details.get('dimensions', []))}")
         if details.get('scan_times'):
             lines.append(f"Scan Time: {', '.join(details.get('scan_times'))}")
         if details.get('driving_modes'):
@@ -2025,7 +2177,7 @@ class EnhancedChatbot:
             ("Pixel Pitch", one_line(a_details, 'pixel_pitch'), one_line(b_details, 'pixel_pitch')),
             ("Module Resolution", one_line(a_details, 'module_resolutions'), one_line(b_details, 'module_resolutions')),
             ("Brightness", one_line(a_details, 'brightness_options'), one_line(b_details, 'brightness_options')),
-            ("Module Size", one_line(a_details, 'module_sizes'), one_line(b_details, 'module_sizes')),
+            ("Dimension", one_line(a_details, 'dimensions'), one_line(b_details, 'dimensions')),
             ("IP Rating", one_line(a_details, 'ip_rating'), one_line(b_details, 'ip_rating'))
         ]
         # Add pricing based on type
@@ -2058,28 +2210,28 @@ class EnhancedChatbot:
         parts = []
         sel = c.get('selected_panel', {})
         if sel:
-            parts.append(f"Type: {sel.get('type')}\n")
-            parts.append(f"Model: {sel.get('model')}\n")
+            parts.append(f"**Type:** {sel.get('type')}\n")
+            parts.append(f"**Model:** {sel.get('model')}\n")
         if 'rental_duration' in c:
-            parts.append(f"Rental Duration: {c['rental_duration']}\n")
+            parts.append(f"**Rental Duration:** {c['rental_duration']}\n")
         if 'purpose' in c:
-            parts.append(f"Purpose: {c['purpose']}\n")
+            parts.append(f"**Purpose:** {c['purpose']}\n")
         if 'width' in c and 'height' in c:
-            parts.append(f"Size: {c['width']} x {c['height']} (ft)\n")
+            parts.append(f"**Size:** {c['width']} x {c['height']} (ft)\n")
         if 'quantity' in c:
-            parts.append(f"Quantity: {c['quantity']}\n")
-        parts.append(f"Include controller: {c.get('include_controller', False)}\n")
-        parts.append(f"Installation required: {c.get('installation', False)}\n")
+            parts.append(f"**Quantity:** {c['quantity']}\n")
+        parts.append(f"**Include controller:** {c.get('include_controller', False)}\n")
+        parts.append(f"**Installation required:** {c.get('installation', False)}\n")
         if 'delivery' in c:
-            parts.append(f"Delivery: {c['delivery']}\n")
+            parts.append(f"**Delivery:** {c['delivery']}\n")
         if 'company_name' in c:
-            parts.append(f"Company: {c['company_name']}\n")
+            parts.append(f"**Company:** {c['company_name']}\n")
             if c.get('contact_person'):
-                parts.append(f"Contact: {c.get('contact_person')}\n")
+                parts.append(f"**Contact:** {c.get('contact_person')}\n")
             if c.get('mobile'):
-                parts.append(f"Mobile: {c.get('mobile')}\n")
+                parts.append(f"**Mobile:** {c.get('mobile')}\n")
             if c.get('email'):
-                parts.append(f"Email: {c.get('email')}\n")
+                parts.append(f"**Email:** {c.get('email')}\n")
         return "".join(parts).rstrip()
 
 
@@ -2088,7 +2240,21 @@ class EnhancedChatbot:
 # ---------------------------
 @method_decorator(csrf_exempt, name='dispatch')
 class AnalyticsAPIView(APIView):
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
     def get(self, request):
+        logger = logging.getLogger(__name__)
+        ip_address = self.get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        timestamp = timezone.now().isoformat()
+        logger.info(f"Request received: {request.method} {request.path} | IP: {ip_address} | User-Agent: {user_agent} | Timestamp: {timestamp}")
+
         # Top searched panels
         top_panels = ChatLog.objects.values('selected_panel').annotate(count=Count('selected_panel')).order_by('-count')[:10]
         top_panels_data = [{'panel': item['selected_panel'] or 'Unknown', 'count': item['count']} for item in top_panels]
@@ -2112,7 +2278,21 @@ class AnalyticsAPIView(APIView):
 # ---------------------------
 @method_decorator(csrf_exempt, name='dispatch')
 class ChatDataAPIView(APIView):
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
     def get(self, request):
+        logger = logging.getLogger(__name__)
+        ip_address = self.get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        timestamp = timezone.now().isoformat()
+        logger.info(f"Request received: {request.method} {request.path} | IP: {ip_address} | User-Agent: {user_agent} | Timestamp: {timestamp}")
+
         filter_type = request.query_params.get('filter', 'today')  # today, week, month, year
 
         now = timezone.now()
@@ -2293,19 +2473,47 @@ class EnhancedWelcomeAPIView(APIView):
         return ip
 
 # ---------------------------
+# Logged Welcome API View
+# ---------------------------
+@method_decorator(csrf_exempt, name='dispatch')
+class LoggedWelcomeAPIView(APIView):
+    def get(self, request):
+        logger = logging.getLogger(__name__)
+        logger.info(f"Request received: {request.method} {request.path}")
+        return Response({"message": "Welcome to the XIGI LED Assistant API Service!"})
+
+# ---------------------------
+# Custom Welcome API View
+# ---------------------------
+@method_decorator(csrf_exempt, name='dispatch')
+class CustomWelcomeAPIView(APIView):
+    def get(self, request):
+        logger = logging.getLogger(__name__)
+        logger.info(f"Request received: {request.method} {request.path}")
+        return Response({"message": "Welcome to the XIGI LED Assistant API Service!"})
+
+# ---------------------------
 # API View
 # ---------------------------
 @method_decorator(csrf_exempt, name='dispatch')
 class AlexaChatAPIView(APIView):
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
     def post(self, request):
+        logger = logging.getLogger(__name__)
+        ip_address = self.get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        timestamp = timezone.now().isoformat()
+        logger.info(f"Request received: {request.method} {request.path} | IP: {ip_address} | User-Agent: {user_agent} | Timestamp: {timestamp}")
+
         session_id = request.data.get("session_id") or str(uuid.uuid4())
         message = (request.data.get("message") or "").strip()
-        if not message:
-            return Response({
-                "session_id": session_id,
-                "reply": "👋 Hi there! I'm XIGI Assistant — your smart LED display guide. 💡\nWould you like to start with Indoor or Outdoor panels?",
-                "intent": "greeting"
-            })
 
         # ensure session exists
         if session_id not in SESSIONS:
@@ -2317,13 +2525,14 @@ class AlexaChatAPIView(APIView):
         bot = EnhancedChatbot(session_id=session_id)
         response = bot.get_reply(message)
 
-        # Save user message
-        ChatMessage.objects.create(
-            session=session_obj,
-            sender='user',
-            message=message,
-            intent=response.get('intent'),
-        )
+        # Save user message only if not empty
+        if message:
+            ChatMessage.objects.create(
+                session=session_obj,
+                sender='user',
+                message=message,
+                intent=response.get('intent'),
+            )
 
         # Save bot response
         ChatMessage.objects.create(
